@@ -1,6 +1,6 @@
 # qlever-conformance-website
 
-Website to visualize the result files of the [sparql-conformance](https://github.com/ad-freiburg/sparql-conformance).
+Website to **visualize** the result files of the [sparql-conformance](https://github.com/ad-freiburg/sparql-conformance).
 
 ## Prerequisites
 
