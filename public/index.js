@@ -541,7 +541,11 @@ function buildTable(jsonArray, currentTestName) {
         row.appendChild(testTypeCell);
 
         var statusCell = document.createElement("td");
-        statusCell.textContent = test.status;
+        let status = test.status;
+        if (test.status === "Failed: Intended") {
+            status = "Intended deviation";
+        }
+        statusCell.textContent = status;
         row.appendChild(statusCell);
 
         var errorTypeCell = document.createElement("td");
@@ -575,6 +579,7 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2, na
             labelClass = "tests-failed";
             break;
         case "Failed: Intended":
+        case "Intended deviation":
             labelClass = "tests-passedFailed";
             break;
     }
@@ -590,10 +595,16 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2, na
         } else {
             name2 = selectedRun2;
         }
-        header.innerHTML += `<p><label class="text-primary">${name1}</label>: <label class="${labelClass}">${testDetails["status"]}</label> ${testDetails.errorType}</p>`;
-        header.innerHTML += `<p><label class="text-info">${name2}</label>: <label class="${labelClass}">${testDetails["status-run2"]}</label> ${testDetails["errorType-run2"]}</p>`;
+        let statusHeader1 = testDetails["status"];
+        if (testDetails["status"] === "Failed: Intended") statusHeader1 = "Intended deviation";
+        let statusHeader2 = testDetails["status-run2"];
+        if (testDetails["status-run2"] === "Failed: Intended") statusHeader2 = "Intended deviation";
+        header.innerHTML += `<p><label class="text-primary">${name1}</label>: <label class="${labelClass}">${statusHeader1}</label> ${testDetails.errorType}</p>`;
+        header.innerHTML += `<p><label class="text-info">${name2}</label>: <label class="${labelClass}">${statusHeader2}</label> ${testDetails["errorType-run2"]}</p>`;
     } else {
-        header.innerHTML += `<p><label class="${labelClass}">${testDetails.status}</label> ${testDetails.errorType}</p>`;
+        let statusHeader = testDetails["status"];
+        if (testDetails["status"] === "Failed: Intended") statusHeader = "Intended deviation";
+        header.innerHTML += `<p><label class="${labelClass}">${statusHeader}</label> ${testDetails.errorType}</p>`;
 
     }
 
@@ -875,6 +886,7 @@ function matchStatus(status, s, results) {
             results[`${s}ToP`] = results[`${s}ToP`] + 1
             break;
         case "Failed: Intended":
+        case "Intended deviation":
             results[`${s}ToI`] = results[`${s}ToI`] + 1
             break;
         case "Failed":
@@ -928,6 +940,7 @@ function compare(dict1, dict2) {
                         matchStatus(dict1[key]["status"], "p", information)
                         break;
                     case "Failed: Intended":
+                    case "Intended deviation":
                         matchStatus(dict1[key]["status"], "i", information)
                         break;
                     case "Failed":
@@ -946,6 +959,7 @@ function compare(dict1, dict2) {
                     information["added"]["P"] = information["added"]["P"] + 1
                     break;
                 case "Failed: Intended":
+                case "Intended deviation":
                     information["added"]["I"] = information["added"]["I"] + 1
                     break;
                 case "Failed":
@@ -1054,7 +1068,9 @@ function createChekboxes(items) {
     for (let itemId in items) {
         html += `<div class="form-check form-check-inline">`;
         html += `<input class="form-check-input" type="checkbox" id="filter-${items[itemId].replace(/\s+/g, '')}" value="${items[itemId]}" checked>`;
-        html += `<label class="form-check-label" for="filter-${items[itemId].replace(/\s+/g, '')}">${items[itemId]}</label></div>`;
+        let status = items[itemId];
+        if (status === "Failed: Intended") status = "Intended deviation";
+        html += `<label class="form-check-label" for="filter-${items[itemId].replace(/\s+/g, '')}">${status}</label></div>`;
     }
     return html
 }
