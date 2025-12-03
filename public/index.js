@@ -1032,6 +1032,9 @@ function createInfoElement(heading, text, text2) {
 }
 
 function addIfNotPresent(array, item) {
+    if (item == "Failed: Intended") {
+        item = "Intended deviation";
+    } 
     if (!array.includes(item)) {
         array.push(item);
     }
@@ -1094,7 +1097,11 @@ function filterTable(value, jsonArray) {
     var groupFilter = getCheckedValues("container-filter-group");
     jsonArray.forEach(function(test) {
         if (!statusFilter.includes(test.status)) {
-            return;
+            if (test.status !== "Failed: Intended"
+                || !statusFilter.includes("Intended deviation")
+            ) {
+                return;
+            }
         }
         if (!errorFilter.includes(test.errorType)) {
             return;
