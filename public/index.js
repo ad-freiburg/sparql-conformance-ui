@@ -1108,13 +1108,7 @@ function filterTable(value, jsonArray) {
     var errorFilter = getCheckedValues("container-filter-error");
     var typeFilter = getCheckedValues("container-filter-type");
     var groupFilter = getCheckedValues("container-filter-group");
-    console.log(errorFilter);
     jsonArray.forEach(function(test) {
-        if (test.name === "COUNT 1" || test.name === "COUNT 2") {
-            console.log(test.name);
-            console.log(test.status);
-            console.log(test.errorType);
-        }
         if (!statusFilter.includes(test.status)) {
             if (test.status !== "Failed: Intended"
                 || !statusFilter.includes("Intended deviation")
