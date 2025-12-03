@@ -549,7 +549,11 @@ function buildTable(jsonArray, currentTestName) {
         row.appendChild(statusCell);
 
         var errorTypeCell = document.createElement("td");
-        errorTypeCell.textContent = test.errorType;
+        let errorType = test.errorType;
+        if (errorType === "Known, intended behaviour that does not comply with SPARQL standard") {
+            errorType = "Intended deviation from SPARQL standard";
+        }
+        errorTypeCell.textContent = errorType;
         row.appendChild(errorTypeCell);
 
         tableBody.appendChild(row);
@@ -599,12 +603,18 @@ function buildTestInformation(testName, jsonArray, selectedRun, selectedRun2, na
         if (testDetails["status"] === "Failed: Intended") statusHeader1 = "Intended deviation";
         let statusHeader2 = testDetails["status-run2"];
         if (testDetails["status-run2"] === "Failed: Intended") statusHeader2 = "Intended deviation";
-        header.innerHTML += `<p><label class="text-primary">${name1}</label>: <label class="${labelClass}">${statusHeader1}</label> ${testDetails.errorType}</p>`;
-        header.innerHTML += `<p><label class="text-info">${name2}</label>: <label class="${labelClass}">${statusHeader2}</label> ${testDetails["errorType-run2"]}</p>`;
+        let errorTypeHeader1 = testDetails["errorType"];
+        if (testDetails["errorType"] === "Known, intended behaviour that does not comply with SPARQL standard") errorTypeHeader1 = "Intended deviation from SPARQL standard";
+        let errorTypeHeader2 = testDetails["errorType-run2"];
+        if (testDetails["errorType-run2"] === "Known, intended behaviour that does not comply with SPARQL standard") errorTypeHeader2 = "Intended deviation from SPARQL standard";
+        header.innerHTML += `<p><label class="text-primary">${name1}</label>: <label class="${labelClass}">${statusHeader1}</label> ${errorTypeHeader1}</p>`;
+        header.innerHTML += `<p><label class="text-info">${name2}</label>: <label class="${labelClass}">${statusHeader2}</label> ${errorTypeHeader2}</p>`;
     } else {
         let statusHeader = testDetails["status"];
+        let errorTypeHeader = testDetails["errorType"];
         if (testDetails["status"] === "Failed: Intended") statusHeader = "Intended deviation";
-        header.innerHTML += `<p><label class="${labelClass}">${statusHeader}</label> ${testDetails.errorType}</p>`;
+        if (testDetails["errorType"] === "Known, intended behaviour that does not comply with SPARQL standard") errorTypeHeader = "Intended deviation from SPARQL standard";
+        header.innerHTML += `<p><label class="${labelClass}">${statusHeader}</label> ${errorTypeHeader}</p>`;
 
     }
 
@@ -1035,6 +1045,9 @@ function addIfNotPresent(array, item) {
     if (item == "Failed: Intended") {
         item = "Intended deviation";
     } 
+    if (item == "Known, intended behaviour that does not comply with SPARQL standard") {
+        item = "Intended deviation from SPARQL standard";
+    }
     if (!array.includes(item)) {
         array.push(item);
     }
@@ -1095,7 +1108,13 @@ function filterTable(value, jsonArray) {
     var errorFilter = getCheckedValues("container-filter-error");
     var typeFilter = getCheckedValues("container-filter-type");
     var groupFilter = getCheckedValues("container-filter-group");
+    console.log(errorFilter);
     jsonArray.forEach(function(test) {
+        if (test.name === "COUNT 1" || test.name === "COUNT 2") {
+            console.log(test.name);
+            console.log(test.status);
+            console.log(test.errorType);
+        }
         if (!statusFilter.includes(test.status)) {
             if (test.status !== "Failed: Intended"
                 || !statusFilter.includes("Intended deviation")
@@ -1104,7 +1123,11 @@ function filterTable(value, jsonArray) {
             }
         }
         if (!errorFilter.includes(test.errorType)) {
-            return;
+            if (test.errorType !== "Known, intended behaviour that does not comply with SPARQL standard"
+                || !errorFilter.includes("Intended deviation from SPARQL standard")
+            ) {
+                return;
+            }
         }
         if (!typeFilter.includes(test.typeName)) {
             return;
