@@ -377,6 +377,31 @@ const authenticateApiKey = async (request, reply) => {
 };
 
 /**
+ * API Key authentication hook for the destructive DELETE endpoint.
+ * Uses config.deleteApiKey (DELETE_API_KEY, falling back to API_KEY).
+ */
+const authenticateDeleteKey = async (request, reply) => {
+  if (config.isPrivateMode) {
+    return; // same as upload: local single-user mode skips auth
+  }
+
+  const apiKey = request.headers['x-api-key'];
+  const expectedApiKey = config.deleteApiKey;
+
+  if (!expectedApiKey) {
+    fastify.log.warn('Neither DELETE_API_KEY nor API_KEY is set - delete endpoint will be unprotected!');
+    return;
+  }
+
+  if (!apiKey || apiKey !== expectedApiKey) {
+    return reply.code(401).send({
+      error: 'Unauthorized',
+      message: 'Invalid or missing API key'
+    });
+  }
+};
+
+/**
  * Compress JSON string using gzip for efficient DB storage
  * @param {string} jsonString - JSON string to compress
  * @returns {Buffer} - Compressed data as Buffer
@@ -972,6 +997,44 @@ fastify.get('/api/runs/:id', {
 });
 
 /**
+ * Delete a specific test suite run by ID
+ * DELETE /api/runs/:id
+ * Header: x-api-key (DELETE_API_KEY, or API_KEY if the former is unset)
+ */
+fastify.delete('/api/runs/:id', {
+  preHandler: [requireUploadSurface, authenticateDeleteKey]
+}, async (request, reply) => {
+  const { id } = request.params;
+
+  if (!id || !/^\d+$/.test(id)) {
+    return reply.code(400).send({
+      error: 'Bad Request',
+      message: 'Invalid ID parameter'
+    });
+  }
+
+  try {
+    const info = query('DELETE FROM test_suite_runs WHERE id = ?').run(parseInt(id, 10));
+
+    if (info.changes === 0) {
+      return reply.code(404).send({
+        error: 'Not Found',
+        message: `Test suite run with ID ${id} not found`
+      });
+    }
+
+    request.log.info(`Deleted test suite run ID: ${id}`);
+    return { success: true, message: 'Test suite run deleted', id: parseInt(id, 10) };
+  } catch (error) {
+    request.log.error(error);
+    return reply.code(500).send({
+      error: 'Internal Server Error',
+      message: 'Failed to delete test suite run'
+    });
+  }
+});
+
+/**
  * List all test suite runs with optional filters
  * GET /api/runs?repo=&engine=&version=&source=&limit=&offset=
  */
@@ -1215,6 +1278,7 @@ const start = async () => {
     }
     if (config.apiSurface === 'all' || config.apiSurface === 'upload') {
       fastify.log.info(`  - POST /api/upload`);
+      fastify.log.info(`  - DELETE /api/runs/:id`);
     }
     
     // Log GitHub App status

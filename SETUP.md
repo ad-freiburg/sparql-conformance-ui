@@ -1,119 +1,64 @@
 # Setup and Hosting
-Explaining the two modes and how to setup the GitHub-App:
 
-- **Public mode** (website + read API + separate upload API)
-- **Private mode** (local/private viewer with optional auto-import)
-- **GitHub App integration** (checks + PR comments)
+This guide covers running and deploying the site. For a bare-minimum "just get it up"
+walkthrough, see the [Quick Start in the README](./README.md#quick-start-public-mode)
+first — this document goes deeper.
+
+## Which mode do you want?
+
+| You want to…                                                        | Use            | Jump to                              |
+|---------------------------------------------------------------------|----------------|--------------------------------------|
+| Deploy the public website + upload API (optionally with GitHub App) | **Public mode**  | [§2 Public deployment](#2-public-deployment) |
+| Browse a local folder of result files, no keys, no CI               | **Private mode** | [§3 Private hosting](#3-private-hosting)     |
+
+Both run via Docker Compose profiles. The mode and endpoint surface are fixed by the
+profile you start, not by `.env`.
+
+- **Public mode** runs three services:
+  - `web` on port `8080` (React app + proxied read API at `/api/*`)
+  - `api-public` (read-only API, internal)
+  - `uploader` on port `3001` (upload-only API)
+- **Private mode** runs two services:
+  - `web-private` on port `8081`
+  - `api-private` (combined read + upload API). Used by `qlever-control` for the
+    visualize command.
 
 ---
 
 ## 1) Prerequisites
 
 - Docker + Docker Compose
-- Optional: GitHub App credentials (for PR comments/check runs)
+- Optional: GitHub App credentials — only for PR comments / check runs in public mode
+  (see [§4](#4-github-app-setup-public-mode))
 
 ---
 
-## 2) Runtime Modes
+## 2) Public deployment
 
-### Public mode
-Runs three services:
-
-- `web` on port `8080` (React app + proxied read API at `/api/*`)
-- `api-public` (read-only API, internal)
-- `uploader` on port `3001` (upload-only API)
-
-### Private mode
-Runs two services:
-
-- `web-private` on port `8081`
-- `api-private` (read + upload API)
-
-Use this for local/private analysis with mounted result files.
-This is used in qlever-control for the visualize command.
-
----
-
-## 3) Environment Variables
-
-Use the template and then edit values:
+### 2.1 Minimal `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-Every variable is explained inline in [.env.example](.env.example), including where
-to find each value. The most important ones are summarized below.
-
-### Subpath / subdomain deployment
-
-`VITE_BASE_PATH` is the single frontend knob. The API base URL and the SPA router basename are
-derived from it automatically, so you only set one value:
-
-- Root or dedicated subdomain (e.g. `https://sparql.example.com/`): `VITE_BASE_PATH=/` (default).
-- Subpath (e.g. `https://qlever.dev/sparql-conformance-ui-v2/`):
-  `VITE_BASE_PATH=/sparql-conformance-ui-v2/`.
-
-`VITE_BASE_PATH` is baked in at **build time**, so after changing it rebuild the web image
-(`docker compose --profile public build web`). CORS needs no configuration (the website talks to the
-API same-origin); set `WEBSITE_URL` only if you use the GitHub App and want correct PR-comment links.
-
-### Minimal `.env` (public)
+Then set just the upload key — everything else has working defaults:
 
 ```env
 # Required for uploader auth. Any strong random string — generate one with:
 #   openssl rand -hex 32
 API_KEY=replace-with-strong-random-key
-
-# Public UI URL used in generated links/comments
-WEBSITE_URL=https://conformance.example.com
-
-# Optional GitHub App integration (set all 3 to enable — see section 6 for
-# where to find each value)
-GITHUB_APP_ID=
-GITHUB_APP_PRIVATE_KEY=
-GITHUB_INSTALLATION_ID=
-
-# Optional behavior
-LOG_LEVEL=info
 ```
 
-For GitHub App-enabled public deployments, you can optionally customize the
-check/comment display names (defaults shown):
+Every variable is explained inline in [.env.example](.env.example); the
+[full reference](#5-environment-variable-reference) is at the end of this document.
 
-```env
-CHECK_NAME=SPARQL 1.1 Conformance Check
-CHECK_TITLE=SPARQL Test Suite
-CHECK_RUNNING_TITLE=Running SPARQL Test Suite
-COMMENT_AUTHOR=conformance-test[bot]
-```
-
-### Minimal `.env` (private)
-
-```env
-# Host path mounted read-only into /results in api-private
-LOCAL_RESULTS_DIR=/absolute/path/to/results
-
-# Optional
-LOG_LEVEL=info
-```
-
-Notes:
-
-- In private mode, GitHub App integration is disabled.
-- `GITHUB_APP_PRIVATE_KEY` can be plain PEM text **or** base64-encoded PEM.
-
----
-
-## 4) Public Hosting (Docker Compose)
-
-### Start
+### 2.2 Start
 
 ```bash
 docker compose --profile public up -d --build
 ```
 
-### Endpoints
+### 2.3 Endpoints
 
 - Website: `http://localhost:8080`
 - Uploader API: `http://localhost:3001/api/upload`
@@ -126,58 +71,87 @@ PUBLIC_WEB_PORT=8080
 PUBLIC_UPLOAD_PORT=3001
 ```
 
+The database starts empty. To load data, upload a result file (see
+[GITHUB_WORKFLOW.md](./GITHUB_WORKFLOW.md) for CI and manual upload examples).
+
+### 2.4 Optional: subpath / subdomain deployment
+
+`VITE_BASE_PATH` is the single frontend knob. The API base URL and the SPA router
+basename are derived from it automatically, so you only set one value:
+
+- Root or dedicated subdomain (e.g. `https://sparql.example.com/`): `VITE_BASE_PATH=/`
+  (default).
+- Subpath (e.g. `https://qlever.dev/sparql-conformance-ui/`):
+  `VITE_BASE_PATH=/sparql-conformance-ui/`.
+
+`VITE_BASE_PATH` is baked in at **build time**, so after changing it rebuild the web
+image:
+
+```bash
+docker compose --profile public build web
+```
+
+CORS needs no configuration (the website talks to the API same-origin). Set `WEBSITE_URL`
+only if you use the GitHub App and want correct PR-comment links.
+
 ---
 
-## 5) Private Hosting (Docker Compose)
+## 3) Private hosting
 
-### Start
+For local/private analysis with mounted result files. No API key or GitHub App required.
+
+### 3.1 Start
 
 ```bash
 LOCAL_RESULTS_DIR=/absolute/path/to/results docker compose --profile private up -d --build
 ```
 
-### Endpoints
+Optionally set a minimal `.env`:
+
+```env
+# Host path mounted read-only into /results in api-private
+LOCAL_RESULTS_DIR=/absolute/path/to/results
+
+# Optional
+LOG_LEVEL=info
+```
+
+### 3.2 Endpoints
 
 - Private website: `http://localhost:8081`
 - API (proxied): `http://localhost:8081/api/*`
 
-You can change the private web host port via:
+Change the private web host port via:
 
 ```env
 PRIVATE_WEB_PORT=8081
 ```
 
-### Auto-import behavior
+### 3.3 Auto-import behavior
 
-On startup, private mode can recursively import:
-
-- `.json`
-- `.json.gz`
-- `.json.bz2`
-
-from `LOCAL_RESULTS_DIR` into SQLite.
-
-Recommended folder layout:
+On startup, private mode recursively imports `.json`, `.json.gz`, and `.json.bz2` files
+from `LOCAL_RESULTS_DIR` into SQLite. Recommended folder layout (improves inferred
+`engine_name` / `engine_version`):
 
 ```text
 <LOCAL_RESULTS_DIR>/<engine_name>/<engine_version>/<file>.json(.gz|.bz2)
 ```
 
-This improves inferred metadata (`engine_name`, `engine_version`).
+GitHub App integration is disabled in private mode.
 
 ---
 
-## 6) GitHub App Setup (Public mode)
+## 4) GitHub App Setup (Public mode)
 
-If you want automatic PR comments and check runs, configure a GitHub App.
+Optional. Configure this only if you want automatic PR comments and check runs.
 
-### 6.1 Create App
+### 4.1 Create App
 
 1. GitHub → Settings → Developer settings → GitHub Apps → New GitHub App
 2. Set app name and homepage URL.
 3. Install the app on the target repository/org.
 
-### 6.2 Required repository permissions
+### 4.2 Required repository permissions
 
 - **Checks**: Read & write
 - **Pull requests**: Read
@@ -185,18 +159,17 @@ If you want automatic PR comments and check runs, configure a GitHub App.
 - **Metadata**: Read-only (default)
 - **Contents**: Read-only (used when querying default branch commit)
 
-### 6.3 Collect credentials
+### 4.3 Collect credentials
 
 You need three values from the app:
 
-- **`GITHUB_APP_ID`** — on the app's **General** page (Settings → Developer
-  settings → GitHub Apps → *your app*), the **App ID** field. It's a small number,
-  e.g. `123456`.
+- **`GITHUB_APP_ID`** — on the app's **General** page (Settings → Developer settings →
+  GitHub Apps → *your app*), the **App ID** field. A small number, e.g. `123456`.
 
-- **`GITHUB_APP_PRIVATE_KEY`** — on the same **General** page, under **Private
-  keys**, click *Generate a private key*. This downloads a `.pem` file. Paste its
-  full contents into the variable. If you need it on one line, base64-encode it and
-  paste that instead:
+- **`GITHUB_APP_PRIVATE_KEY`** — on the same **General** page, under **Private keys**,
+  click *Generate a private key*. This downloads a `.pem` file. Paste its full contents
+  into the variable (plain PEM text works). If you need it on one line, base64-encode it
+  and paste that instead:
 
   ```bash
   base64 -w0 your-github-app-private-key.pem
@@ -210,12 +183,21 @@ You need three values from the app:
 
   e.g. `987654321`.
 
-### 6.4 Configure environment
+### 4.4 Configure environment
 
-Set these values in `.env`:
+Set in `.env`:
 
 - Required for integration: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_INSTALLATION_ID`
 - For links in comments/checks: `WEBSITE_URL`
+
+Optionally customize the check/comment display names (defaults shown):
+
+```env
+CHECK_NAME=SPARQL 1.1 Conformance Check
+CHECK_TITLE=SPARQL Test Suite
+CHECK_RUNNING_TITLE=Running SPARQL Test Suite
+COMMENT_AUTHOR=conformance-test[bot]
+```
 
 Then restart the public profile:
 
@@ -223,11 +205,10 @@ Then restart the public profile:
 docker compose --profile public up -d --build
 ```
 
-### 6.5 Verify
+### 4.5 Verify
 
-Use:
-
-- `GET /api/github/status` via website domain, e.g. `https://conformance.example.com/api/github/status`
+Query `GET /api/github/status` via the website domain, e.g.
+`https://conformance.example.com/api/github/status`.
 
 Expected:
 
@@ -238,37 +219,28 @@ If `configured` is `false`, at least one required GitHub App variable is missing
 
 ---
 
-## 7) Uploading Results
+## 5) Environment variable reference
 
-### 7.1 CI upload (public uploader)
+The most important variables, summarized. Every variable — including where to find each
+value — is documented inline in [.env.example](.env.example).
 
-```bash
-curl -X POST "https://upload.conformance.example.com/api/upload" \
-  -H "x-api-key: $API_KEY" \
-  -H "x-upload-source: ci" \
-  -H "x-repo-full-name: owner/repo" \
-  -H "x-commit-sha: <sha>" \
-  -H "x-workflow-run-id: <run-id>" \
-  -H "x-ref-name: main" \
-  -H "x-engine-name: qlever" \
-  -H "x-engine-version: nightly-2026-03-01" \
-  -F "file=@results.json.bz2"
-```
+| Variable                 | Mode    | Required | Purpose |
+|--------------------------|---------|----------|---------|
+| `API_KEY`                | public  | yes      | Shared secret the uploader checks (`x-api-key`). Generate with `openssl rand -hex 32`. |
+| `DELETE_API_KEY`         | public  | no       | Separate key authorizing `DELETE /api/runs/:id`. Keep distinct from `API_KEY` so the CI-shared upload key cannot delete runs. Falls back to `API_KEY` if unset. |
+| `VITE_BASE_PATH`         | both    | no       | URL path the site is served under (`/` default, or a subpath). Baked in at build time. |
+| `WEBSITE_URL`            | public  | no       | Full public URL, used only for GitHub PR-comment links. |
+| `LOCAL_RESULTS_DIR`      | private | yes      | Absolute host path to the results folder to auto-import. |
+| `LOG_LEVEL`              | both    | no       | Log verbosity: `info` (default) or `debug`. |
+| `PUBLIC_WEB_PORT` / `PUBLIC_UPLOAD_PORT` / `PRIVATE_WEB_PORT` | — | no | Host ports (defaults `8080` / `3001` / `8081`). |
 
-### 7.2 Manual upload (public uploader)
+Notes:
 
-```bash
-curl -X POST "https://upload.conformance.example.com/api/upload" \
-  -H "x-api-key: $API_KEY" \
-  -H "x-upload-source: manual" \
-  -H "x-repo-full-name: manual/uploads" \
-  -H "x-engine-name: graphdb" \
-  -H "x-engine-version: v10.8" \
-  -F "file=@results.json.bz2"
-```
+- `GITHUB_APP_PRIVATE_KEY` can be plain PEM text **or** base64-encoded PEM.
 
 ---
-## 8) Operations
+
+## 6) Operations
 
 ### Check running services
 
@@ -279,12 +251,10 @@ docker compose ps
 ### View logs
 
 ```bash
+# public
 docker compose logs -f web api-public uploader
-```
 
-or private:
-
-```bash
+# private
 docker compose logs -f web-private api-private
 ```
 
@@ -298,15 +268,19 @@ docker compose --profile private down
 
 ---
 
+## 7) Troubleshooting
+
 ### "Endpoint is not available in the current API surface mode"
 
 You are calling an endpoint disabled for that service (`read` vs `upload` API surface).
 
 ### Upload returns 401
 
-`x-api-key` does not match `API_KEY` for uploader.
+`x-api-key` does not match `API_KEY` for the uploader.
 
 ### GitHub status not authenticated
 
-Check all GitHub App envs and ensure app is installed on the target repo/org.
+Check all GitHub App envs and ensure the app is installed on the target repo/org.
 
+For CI upload issues (missing headers, wrong URL), see
+[GITHUB_WORKFLOW.md](./GITHUB_WORKFLOW.md).

@@ -56,6 +56,7 @@ services:
       WEBSITE_URL: ${WEBSITE_URL:-}
       DB_PATH: /data/conformance.db
       API_KEY: ${API_KEY:-change-me}
+      DELETE_API_KEY: ${DELETE_API_KEY:-}
       GITHUB_APP_ID: ${GITHUB_APP_ID:-}
       GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
       GITHUB_INSTALLATION_ID: ${GITHUB_INSTALLATION_ID:-}

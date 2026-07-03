@@ -2,6 +2,11 @@
 
 This directory contains SQLite database setup and connection utilities using better-sqlite3 and FTS5.
 
+> **This is the non-Docker local development path** — running the Node API and SQLite
+> scripts directly on your machine (e.g. to hack on the code). For Docker-based hosting
+> (public/private profiles), see [../SETUP.md](../SETUP.md) instead; those ports are
+> `8080`/`8081`/`3001`, whereas the raw dev API server below runs on `3000`.
+
 ## Quick Start
 
 ### 1. Run Setup Script
@@ -38,7 +43,7 @@ npm run db:import -- test.json \
   --workflow 789456
 ```
 
-### 5. Start the API Server
+### 4. Start the API Server
 
 ```bash
 # Development mode (auto-reload)

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config/api';
 import CommitShaLink from '../components/CommitShaLink';
+import PrBadge from '../components/PrBadge';
 import RunStatsDisplay from '../components/RunStatsDisplay';
 import { formatDbDate } from '../utils/formatDate';
 
@@ -295,11 +296,11 @@ export default function SearchPage() {
                           <h3 className="text-sm font-medium text-gray-900 truncate">
                             {run.run_title ? run.run_title : `Run #${run.id}`}
                           </h3>
-                          {run.pr_number && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded">
-                              PR #{run.pr_number}
-                            </span>
-                          )}
+                          <PrBadge
+                            repoFullName={run.repo_full_name}
+                            prNumber={run.pr_number}
+                            stopPropagation
+                          />
                           {run.pr_number && latestRunIdPerPR.has(run.id) && (
                             <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">
                               Latest

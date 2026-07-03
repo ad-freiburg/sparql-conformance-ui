@@ -76,6 +76,14 @@ const config = {
   get apiKey() {
     return process.env.API_KEY;
   },
+
+  // API key that protects the destructive DELETE endpoint. Kept separate from
+  // API_KEY so the upload key (shared with CI) cannot delete runs. If
+  // DELETE_API_KEY is not set, we fall back to API_KEY so a single-key setup
+  // still works.
+  get deleteApiKey() {
+    return process.env.DELETE_API_KEY || process.env.API_KEY;
+  },
   
   // GitHub App settings
   get githubAppId() {

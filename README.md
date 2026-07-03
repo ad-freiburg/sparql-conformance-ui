@@ -10,6 +10,54 @@ Web UI and API for browsing, comparing and uploading SPARQL compliance test resu
 - Upload endpoint for `.json`, `.json.gz`, and `.json.bz2`
 - Public and private Docker Compose profiles
 
+## Quick Start (public mode)
+
+Get the hosted website + upload API running locally in a few minutes. You only need
+**Docker** and **Docker Compose**.
+
+```bash
+# 1. Create your .env from the template
+cp .env.example .env
+
+# 2. Set an upload key in .env — generate a strong one with:
+#    openssl rand -hex 32
+#    then put it in the API_KEY line.
+
+# 3. Start the public profile (website + read API + upload API)
+docker compose --profile public up -d --build
+```
+
+Now open:
+
+- Website: <http://localhost:8080>
+- Health check: <http://localhost:8080/health>
+
+The database starts empty. Upload a result file to see data (use the `API_KEY` you set):
+
+```bash
+curl -X POST "http://localhost:3001/api/upload" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "x-upload-source: manual" \
+  -H "x-repo-full-name: manual/uploads" \
+  -H "x-engine-name: qlever" \
+  -H "x-engine-version: nightly-2026-03-01" \
+  -F "file=@./results/qlever.json.bz2"
+```
+
+Refresh the website — the run now appears in the list.
+
+## Other ways to run
+
+- **Private / local viewer** — point it at a folder of result files and browse them, no
+  API key or GitHub App needed. This is what `qlever-control`'s visualize command uses.
+  See [SETUP.md § Private hosting](./SETUP.md).
+- **Full production deploy** (subpath/subdomain, GitHub App PR comments & checks) —
+  see [SETUP.md](./SETUP.md).
+- **Local development without Docker** (Vite dev server + Node API + SQLite scripts) —
+  see [db/README.md](./db/README.md).
+- **Uploading from CI** (GitHub Actions workflow, headers, secrets) —
+  see [GITHUB_WORKFLOW.md](./GITHUB_WORKFLOW.md).
+
 ## UI routes
 
 - `/` — Search and list runs
@@ -25,70 +73,34 @@ Web UI and API for browsing, comparing and uploading SPARQL compliance test resu
 - `GET /api/latest-master?repo=owner/repo`
 - `GET /api/github/status`
 
-Upload endpoint:
+Upload / delete endpoints:
 
-- `POST /api/upload` (available on upload surface or private mode)
+- `POST /api/upload` — available on the upload surface (public mode) or the combined
+  surface (private mode). Header reference and CI usage:
+  [GITHUB_WORKFLOW.md](./GITHUB_WORKFLOW.md).
+- `DELETE /api/runs/:id` — removes a single run. Protected by the `x-api-key` header,
+  matched against `DELETE_API_KEY` (falling back to `API_KEY` if unset):
 
-## Upload examples
-
-### Public uploader (API key required)
-
-```bash
-curl -X POST "http://localhost:3001/api/upload" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -H "x-upload-source: manual" \
-  -H "x-repo-full-name: manual/uploads" \
-  -H "x-engine-name: qlever" \
-  -H "x-engine-version: nightly-2026-03-01" \
-  -F "file=@./results/qlever.json.bz2"
-```
-
-### Private API (no API key)
-
-```bash
-curl -X POST "http://localhost:3000/api/upload" \
-  -H "x-upload-source: manual" \
-  -H "x-engine-name: graphdb" \
-  -H "x-engine-version: v10.8" \
-  -F "file=@./results/graphdb.json"
-```
+  ```bash
+  curl -X DELETE "http://localhost:3001/api/runs/123" \
+    -H "x-api-key: YOUR_DELETE_API_KEY"
+  ```
 
 ## Docker Compose modes
 
-### Public mode
+The application mode (`public`/`private`) and endpoint surface are fixed by the Docker
+Compose profile you start, not set via `.env`.
 
-- Website: `http://localhost:8080`
-- Uploader: `http://localhost:3001`
+| Mode      | Command                                                                              | Website                 |
+|-----------|--------------------------------------------------------------------------------------|-------------------------|
+| Public    | `docker compose --profile public up --build`                                         | `http://localhost:8080` |
+| Private   | `LOCAL_RESULTS_DIR=./public/results docker compose --profile private up --build`     | `http://localhost:8081` |
 
-```bash
-docker compose --profile public up --build
-```
+Private mode auto-imports files from `LOCAL_RESULTS_DIR` on startup. Full details,
+ports, and verification steps are in [SETUP.md](./SETUP.md).
 
-### Private mode
+## Configuration
 
-- Website: `http://localhost:8081`
-- Auto-imports files from `LOCAL_RESULTS_DIR` on startup
-
-```bash
-LOCAL_RESULTS_DIR=./public/results docker compose --profile private up --build
-```
-
-## Key environment variables
-
-- `VITE_BASE_PATH` — URL path the site is served under: `/` (root/subdomain) or a
-  subpath like `/sparql-conformance-ui-v2/`. The only required frontend var; the API
-  base URL and SPA router basename are derived from it.
-- `API_KEY` — Required in public mode for uploader auth. Any strong random string —
-  generate one with `openssl rand -hex 32`.
-- `WEBSITE_URL` — Optional. Full public URL (e.g. `https://conformance.example.com`),
-  used only for GitHub PR-comment links.
-- `LOCAL_RESULTS_DIR` — Private mode only. Absolute path to the results folder to
-  auto-import (e.g. `/home/me/results`).
-- `LOG_LEVEL` — Optional. Log verbosity: `info` (default) or `debug` to troubleshoot.
-
-The application mode (`public`/`private`) and endpoint surface are fixed by the
-Docker Compose profile you start, not set via `.env`.
-
-Every variable is explained inline in [.env.example](./.env.example). For full
-deployment and GitHub App setup (App ID, installation ID, private key), see
+Every environment variable is explained inline in [.env.example](./.env.example). For a
+summary of the important ones and full deployment / GitHub App setup, see
 [SETUP.md](./SETUP.md).

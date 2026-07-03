@@ -5,6 +5,7 @@ import { extractTestRows, getFullTestData } from '../utils/extractRows';
 import { normalizeDisplayValue, suiteSortComparator } from '../utils/displayMappings';
 import TestDetails from '../components/TestDetails';
 import CommitShaLink from '../components/CommitShaLink';
+import PrBadge from '../components/PrBadge';
 import RunStatsDisplay from '../components/RunStatsDisplay';
 import { formatDbDate } from '../utils/formatDate';
 
@@ -651,11 +652,7 @@ function RunInfoCard({ run, singleRunView = false }) {
           linkClassName="text-xs text-blue-700 hover:text-blue-900 hover:underline font-mono bg-gray-100 px-2 py-1 rounded"
           codeClassName="text-xs text-gray-600 font-mono bg-gray-100 px-2 py-1 rounded"
         />
-        {run.pr_number && (
-          <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded">
-            PR #{run.pr_number}
-          </span>
-        )}
+        <PrBadge repoFullName={run.repo_full_name} prNumber={run.pr_number} />
         <span className="text-xs text-gray-600">
           {formatDbDate(run.created_at, {
             year: 'numeric',

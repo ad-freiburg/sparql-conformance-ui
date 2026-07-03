@@ -54,8 +54,8 @@ For CI secrets, store the **upload endpoint** URL, not the website URL.
    - name: Upload conformance results
         if: always()
         env:
-          API_KEY: 'your-secret-api-key-here'
-          UPLOAD_URL: ${{ secrets.CONFORMANCE_SERVER_URL }}
+          API_KEY: ${{ secrets.CONFORMANCE_API_KEY }}
+          UPLOAD_URL: ${{ secrets.CONFORMANCE_UPLOAD_URL }}
           RUN_TITLE: ${{ github.event.pull_request.title || github.event.head_commit.message || github.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number || '' }}
           HEAD_REF: ${{ github.head_ref || '' }}
@@ -75,7 +75,7 @@ For CI secrets, store the **upload endpoint** URL, not the website URL.
             -H "x-engine-name: qlever" \
             -H "x-engine-version: nightly-${{ github.run_number }}" \
             -F "file=@selected.json.bz2" \
-            $UPLOAD_URL/api/upload)
+            "$UPLOAD_URL")
       
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
@@ -166,4 +166,4 @@ For CI secrets, store the **upload endpoint** URL, not the website URL.
 
 - GitHub App is not fully configured on server
 - Verify with `GET /api/github/status`
-- See [SETUP.md](setup.md) for GitHub App env setup
+- See [SETUP.md](SETUP.md) for GitHub App env setup
