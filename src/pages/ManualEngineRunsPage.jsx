@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config/api';
 import CommitShaLink from '../components/CommitShaLink';
 import RunStatsDisplay from '../components/RunStatsDisplay';
+import { formatDbDate } from '../utils/formatDate';
 
 export default function ManualEngineRunsPage() {
   const navigate = useNavigate();
@@ -148,7 +149,7 @@ export default function ManualEngineRunsPage() {
 
                       <div className="flex flex-col items-end gap-2 ml-4">
                         <span className="text-xs text-gray-500">
-                          {new Date(run.created_at).toLocaleString('en-GB')}
+                          {formatDbDate(run.created_at)}
                         </span>
                         {isSelected && (
                           <div className="flex items-center gap-1 text-blue-600 text-sm font-medium">

@@ -6,6 +6,7 @@ import { normalizeDisplayValue, suiteSortComparator } from '../utils/displayMapp
 import CompareTestDetails from '../components/CompareTestDetails';
 import CommitShaLink from '../components/CommitShaLink';
 import RunStatsDisplay from '../components/RunStatsDisplay';
+import { formatDbDate } from '../utils/formatDate';
 
 export default function CompareView() {
   const { id1, id2 } = useParams();
@@ -725,7 +726,7 @@ function RunInfoCard({ run, computedStats = null, onClick, isLatest, runNumber }
             </span>
           )}
           <span className="text-xs text-gray-600">
-            {new Date(run.created_at).toLocaleString('en-GB', {
+            {formatDbDate(run.created_at, {
               year: 'numeric',
               month: '2-digit',
               day: '2-digit',

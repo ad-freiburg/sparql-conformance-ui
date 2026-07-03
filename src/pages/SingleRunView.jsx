@@ -6,6 +6,7 @@ import { normalizeDisplayValue, suiteSortComparator } from '../utils/displayMapp
 import TestDetails from '../components/TestDetails';
 import CommitShaLink from '../components/CommitShaLink';
 import RunStatsDisplay from '../components/RunStatsDisplay';
+import { formatDbDate } from '../utils/formatDate';
 
 export default function SingleRunView() {
   const { id } = useParams();
@@ -656,7 +657,7 @@ function RunInfoCard({ run, singleRunView = false }) {
           </span>
         )}
         <span className="text-xs text-gray-600">
-          {new Date(run.created_at).toLocaleString('en-GB', {
+          {formatDbDate(run.created_at, {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
