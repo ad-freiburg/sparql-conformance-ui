@@ -1,11 +1,3 @@
-function normalizeBasePath(value) {
-  const raw = String(value || '/').trim();
-  if (!raw || raw === '/') return '';
-
-  const withLeadingSlash = raw.startsWith('/') ? raw : `/${raw}`;
-  return withLeadingSlash.endsWith('/') ? withLeadingSlash.slice(0, -1) : withLeadingSlash;
-}
-
 /**
  * Decodes a potentially base64-encoded private key
  * GitHub App private keys can be stored as base64 in env vars to avoid newline issues
@@ -104,14 +96,9 @@ const config = {
   // Public URL of the website, used only for links in GitHub PR comments / check runs.
   // Set WEBSITE_URL to the full public URL (e.g. https://qlever.dev/sparql-conformance-ui-v2/).
   // This can't be inferred from an upload request (uploads hit the separate uploader service,
-  // not the website), so when unset we fall back to the base path on a localhost dev origin.
+  // not the website), so when unset we fall back to a localhost dev origin.
   get websiteUrl() {
-    if (process.env.WEBSITE_URL) {
-      return process.env.WEBSITE_URL;
-    }
-
-    const basePath = normalizeBasePath(process.env.WEBSITE_BASE_PATH || '/');
-    return `http://localhost:5173${basePath}`;
+    return process.env.WEBSITE_URL || 'http://localhost:5173';
   },
   
   get checkName() {

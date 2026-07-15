@@ -1,18 +1,10 @@
 /**
  * API Configuration and base URL
  */
-
-function normalizeBasePath(value) {
-  const raw = String(value || '/').trim();
-  if (!raw || raw === '/') return '/';
-
-  const withLeadingSlash = raw.startsWith('/') ? raw : `/${raw}`;
-  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
-}
+import { getRuntimeBasePath } from '../utils/basePath.js';
 
 function getDefaultApiBaseUrl() {
-  const basePath = normalizeBasePath(import.meta.env.BASE_URL);
-  return `${basePath}api`;
+  return `${getRuntimeBasePath()}api`;
 }
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || getDefaultApiBaseUrl();

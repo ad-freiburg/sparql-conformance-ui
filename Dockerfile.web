@@ -11,23 +11,9 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-# VITE_BASE_PATH is the single frontend build knob. The API base URL and the router
-# basename are derived from it automatically at build time (see src/config/api.js, src/main.jsx).
-ARG VITE_BASE_PATH=/
-ENV VITE_BASE_PATH=${VITE_BASE_PATH}
 RUN npm run build
 
 FROM nginx:1.27-alpine
-ARG VITE_BASE_PATH=/
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY --from=build /app/dist /tmp/dist
-RUN set -e; \
-		base="${VITE_BASE_PATH}"; \
-		base="$(printf '%s' "$base" | sed 's|^/*||; s|/*$||')"; \
-		if [ -n "$base" ]; then \
-			mkdir -p "/usr/share/nginx/html/$base"; \
-			cp -a /tmp/dist/. "/usr/share/nginx/html/$base/"; \
-		fi; \
-		rm -rf /tmp/dist
 EXPOSE 80

@@ -1,12 +1,13 @@
-# SPARQL 1.1 Compliance Website For QLever
+# SPARQL Conformance UI
 
-Web UI and API for browsing, comparing and uploading SPARQL compliance test results.
+Web UI and API for browsing, comparing and uploading SPARQL conformance test results,
+built for [QLever](https://github.com/ad-freiburg/qlever).
 
 ## Overview
 
 - React frontend (Vite)
 - Fastify API server
-- SQLite (`better-sqlite3`) with FTS5
+- SQLite (`better-sqlite3`) storage
 - Upload endpoint for `.json`, `.json.gz`, and `.json.bz2`
 - Public and private Docker Compose profiles
 
@@ -52,7 +53,8 @@ Refresh the website — the run now appears in the list.
   API key or GitHub App needed. This is what `qlever-control`'s visualize command uses.
   See [SETUP.md § Private hosting](./SETUP.md).
 - **Full production deploy** (subpath/subdomain, GitHub App PR comments & checks) —
-  see [SETUP.md](./SETUP.md).
+  see [SETUP.md](./SETUP.md). The mount path is resolved at request time from the
+  `X-Forwarded-Prefix` header, so moving the site to a subpath needs no rebuild.
 - **Local development without Docker** (Vite dev server + Node API + SQLite scripts) —
   see [db/README.md](./db/README.md).
 - **Uploading from CI** (GitHub Actions workflow, headers, secrets) —

@@ -76,23 +76,43 @@ The database starts empty. To load data, upload a result file (see
 
 ### 2.4 Optional: subpath / subdomain deployment
 
-`VITE_BASE_PATH` is the single frontend knob. The API base URL and the SPA router
-basename are derived from it automatically, so you only set one value:
+The site's mount point is resolved at **request time** from the `X-Forwarded-Prefix`
+header your reverse proxy sends — no rebuild needed to change it. The nginx container
+reads that header, injects it into `index.html`'s `<base href>`, and the SPA router
+basename / API base URL derive from that automatically:
 
-- Root or dedicated subdomain (e.g. `https://sparql.example.com/`): `VITE_BASE_PATH=/`
-  (default).
-- Subpath (e.g. `https://qlever.dev/sparql-conformance-ui/`):
-  `VITE_BASE_PATH=/sparql-conformance-ui/`.
+- Root or dedicated subdomain (e.g. `https://sparql.example.com/`): don't set the
+  header at all (defaults to `/`).
+- Subpath (e.g. `https://qlever.dev/sparql-conformance-ui-v2/`): the app's own nginx
+  has no idea it's mounted under a subpath — it serves everything from its own root
+  (`/assets/...`, `/api/...`, etc.). Your external reverse proxy must therefore do
+  **two** things for requests under that subpath:
+  1. **Strip the prefix** before forwarding, e.g. for a request to
+     `/sparql-conformance-ui-v2/foo` forward `/foo` to this app. This is what
+     routes requests — without it, static assets 404 (the app resolves them from
+     its own root).
+  2. **Add the header** so the app can render correct links/asset URLs back to the
+     browser:
+     ```
+     X-Forwarded-Prefix: /sparql-conformance-ui-v2
+     ```
+     The header only controls generated URLs; it does **not** route requests, so it
+     is not a substitute for step 1 — you need both.
 
-`VITE_BASE_PATH` is baked in at **build time**, so after changing it rebuild the web
-image:
+  Only the outermost proxy in a chain should set this header. This is the same model
+  Grafana/Prometheus use for `sub_path` deployments.
 
-```bash
-docker compose --profile public build web
-```
+  A complete, annotated example for your outer reverse proxy is in
+  [`docker/nginx/external-proxy.example.conf`](./docker/nginx/external-proxy.example.conf) —
+  it shows subpath hosting for both the site (`/example/`) and the uploader (`/upload/`).
 
 CORS needs no configuration (the website talks to the API same-origin). Set `WEBSITE_URL`
-only if you use the GitHub App and want correct PR-comment links.
+only if you use the GitHub App and want correct PR-comment links — that value is
+deploy-time config, unrelated to how the site itself is served.
+
+**Troubleshooting:** if the page loads blank or assets 404 behind a proxy, check that the
+proxy actually sends `X-Forwarded-Prefix` and that it matches the proxy's external path
+exactly (leading/trailing slashes are tolerated, the value itself is not).
 
 ---
 
@@ -228,10 +248,9 @@ value — is documented inline in [.env.example](.env.example).
 |--------------------------|---------|----------|---------|
 | `API_KEY`                | public  | yes      | Shared secret the uploader checks (`x-api-key`). Generate with `openssl rand -hex 32`. |
 | `DELETE_API_KEY`         | public  | no       | Separate key authorizing `DELETE /api/runs/:id`. Keep distinct from `API_KEY` so the CI-shared upload key cannot delete runs. Falls back to `API_KEY` if unset. |
-| `VITE_BASE_PATH`         | both    | no       | URL path the site is served under (`/` default, or a subpath). Baked in at build time. |
-| `WEBSITE_URL`            | public  | no       | Full public URL, used only for GitHub PR-comment links. |
+| `WEBSITE_URL`            | public  | no       | Full public URL, used only for GitHub PR-comment links. Does not affect how the site is served — see section 2.4. |
 | `LOCAL_RESULTS_DIR`      | private | yes      | Absolute host path to the results folder to auto-import. |
-| `LOG_LEVEL`              | both    | no       | Log verbosity: `info` (default) or `debug`. |
+| `LOG_LEVEL`              | both    | no       | Log verbosity: `fatal`, `error`, `warn`, `info` (default), `debug`, `trace`. |
 | `PUBLIC_WEB_PORT` / `PUBLIC_UPLOAD_PORT` / `PRIVATE_WEB_PORT` | — | no | Host ports (defaults `8080` / `3001` / `8081`). |
 
 Notes:
