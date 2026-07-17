@@ -12,7 +12,9 @@
 
 ## Use the correct upload URL
 
-In Docker public mode, upload is served by the separate `uploader` service.
+In Docker public mode (the default `docker-compose.yml`), upload is served by the
+separate `uploader` service. Private mode uses `docker-compose.private.yml` and is not
+the target of this CI workflow guide.
 
 - Website/read API: `http://localhost:8080`
 - Upload API: `http://localhost:3001/api/upload`

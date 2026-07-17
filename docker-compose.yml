@@ -7,7 +7,6 @@ services:
       - "${PUBLIC_WEB_PORT:-8080}:80"
     depends_on:
       - api-public
-    profiles: ["public"]
 
   api-public:
     build:
@@ -29,7 +28,6 @@ services:
       default:
         aliases:
           - api
-    profiles: ["public"]
 
   uploader:
     build:
@@ -56,40 +54,6 @@ services:
       COMMENT_AUTHOR: "${COMMENT_AUTHOR:-}"
     volumes:
       - db_data:/data
-    profiles: ["public"]
-
-  web-private:
-    build:
-      context: .
-      dockerfile: Dockerfile.web
-    ports:
-      - "${PRIVATE_WEB_PORT:-8081}:80"
-    depends_on:
-      - api-private
-    profiles: ["private"]
-
-  api-private:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    environment:
-      APP_MODE: private
-      API_SURFACE: all
-      PORT: 3000
-      HOST: 0.0.0.0
-      LOG_LEVEL: "${LOG_LEVEL:-info}"
-      DB_PATH: /data/conformance.db
-      LOCAL_RESULTS_DIR: /results
-      PRIVATE_AUTO_IMPORT: "true"
-    volumes:
-      - db_data_private:/data
-      - ${LOCAL_RESULTS_DIR:-./public/results}:/results:ro
-    networks:
-      default:
-        aliases:
-          - api
-    profiles: ["private"]
 
 volumes:
   db_data:
-  db_data_private:

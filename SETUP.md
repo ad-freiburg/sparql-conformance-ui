@@ -11,8 +11,9 @@ first — this document goes deeper.
 | Deploy the public website + upload API (optionally with GitHub App) | **Public mode**  | [§2 Public deployment](#2-public-deployment) |
 | Browse a local folder of result files, no keys, no CI               | **Private mode** | [§3 Private hosting](#3-private-hosting)     |
 
-Both run via Docker Compose profiles. The mode and endpoint surface are fixed by the
-profile you start, not by `.env`.
+Public mode uses the default `docker-compose.yml`. Private mode and its endpoint surface
+use `docker-compose.private.yml`, keeping the deployments mutually exclusive without
+using `.env`.
 
 - **Public mode** runs three services:
   - `web` on port `8080` (React app + proxied read API at `/api/*`)
@@ -49,13 +50,16 @@ Then set just the upload key — everything else has working defaults:
 API_KEY=replace-with-strong-random-key
 ```
 
-Every variable is explained inline in [.env.example](.env.example); the
-[full reference](#5-environment-variable-reference) is at the end of this document.
+Persistent variables are explained inline in [.env.example](.env.example). The
+[full reference](#5-environment-variable-reference), including private-mode launch
+inputs, is at the end of this document.
 
 ### 2.2 Start
 
+Compose automatically selects the default `docker-compose.yml`:
+
 ```bash
-docker compose --profile public up -d --build
+docker compose up -d --build
 ```
 
 ### 2.3 Endpoints
@@ -123,28 +127,24 @@ For local/private analysis with mounted result files. No API key or GitHub App r
 ### 3.1 Start
 
 ```bash
-LOCAL_RESULTS_DIR=/absolute/path/to/results docker compose --profile private up -d --build
+LOCAL_RESULTS_DIR=/absolute/path/to/results \
+  docker compose -f docker-compose.private.yml up -d --build
 ```
 
-Optionally set a minimal `.env`:
-
-```env
-# Host path mounted read-only into /results in api-private
-LOCAL_RESULTS_DIR=/absolute/path/to/results
-
-# Optional
-LOG_LEVEL=info
-```
+Provide `LOCAL_RESULTS_DIR` directly in the command rather than storing it in `.env`.
+The private Compose file contains only `web-private` and `api-private`, so public services
+are never started by this command.
 
 ### 3.2 Endpoints
 
 - Private website: `http://localhost:8081`
 - API (proxied): `http://localhost:8081/api/*`
 
-Change the private web host port via:
+To use a different private web host port, provide it directly in the start command:
 
-```env
-PRIVATE_WEB_PORT=8081
+```bash
+LOCAL_RESULTS_DIR=/absolute/path/to/results PRIVATE_WEB_PORT=8082 \
+  docker compose -f docker-compose.private.yml up -d --build
 ```
 
 ### 3.3 Auto-import behavior
@@ -219,10 +219,10 @@ CHECK_RUNNING_TITLE=Running SPARQL Test Suite
 COMMENT_AUTHOR=conformance-test[bot]
 ```
 
-Then restart the public profile:
+Then restart the public services:
 
 ```bash
-docker compose --profile public up -d --build
+docker compose up -d --build
 ```
 
 ### 4.5 Verify
@@ -241,17 +241,19 @@ If `configured` is `false`, at least one required GitHub App variable is missing
 
 ## 5) Environment variable reference
 
-The most important variables, summarized. Every variable — including where to find each
-value — is documented inline in [.env.example](.env.example).
+The most important variables are summarized below. Persistent configuration is documented
+inline in [.env.example](.env.example); private-mode launch inputs are documented in
+[section 3](#3-private-hosting) and should be provided directly in the start command.
 
 | Variable                 | Mode    | Required | Purpose |
 |--------------------------|---------|----------|---------|
 | `API_KEY`                | public  | yes      | Shared secret the uploader checks (`x-api-key`). Generate with `openssl rand -hex 32`. |
 | `DELETE_API_KEY`         | public  | no       | Separate key authorizing `DELETE /api/runs/:id`. Keep distinct from `API_KEY` so the CI-shared upload key cannot delete runs. Falls back to `API_KEY` if unset. |
 | `WEBSITE_URL`            | public  | no       | Full public URL, used only for GitHub PR-comment links. Does not affect how the site is served — see section 2.4. |
-| `LOCAL_RESULTS_DIR`      | private | yes      | Absolute host path to the results folder to auto-import. |
+| `LOCAL_RESULTS_DIR`      | private | yes      | Launch-time shell input for the absolute host path to the results folder to auto-import. |
 | `LOG_LEVEL`              | both    | no       | Log verbosity: `fatal`, `error`, `warn`, `info` (default), `debug`, `trace`. |
-| `PUBLIC_WEB_PORT` / `PUBLIC_UPLOAD_PORT` / `PRIVATE_WEB_PORT` | — | no | Host ports (defaults `8080` / `3001` / `8081`). |
+| `PUBLIC_WEB_PORT` / `PUBLIC_UPLOAD_PORT` | public | no | Host ports (defaults `8080` / `3001`). |
+| `PRIVATE_WEB_PORT`       | private | no       | Launch-time shell input for the private web host port (default `8081`). |
 
 Notes:
 
@@ -264,7 +266,11 @@ Notes:
 ### Check running services
 
 ```bash
+# public
 docker compose ps
+
+# private
+docker compose -f docker-compose.private.yml ps
 ```
 
 ### View logs
@@ -274,15 +280,17 @@ docker compose ps
 docker compose logs -f web api-public uploader
 
 # private
-docker compose logs -f web-private api-private
+docker compose -f docker-compose.private.yml logs -f web-private api-private
 ```
 
 ### Stop services
 
 ```bash
-docker compose --profile public down
-# or
-docker compose --profile private down
+# public
+docker compose down
+
+# private
+docker compose -f docker-compose.private.yml down
 ```
 
 ---

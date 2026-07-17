@@ -9,7 +9,7 @@ built for [QLever](https://github.com/ad-freiburg/qlever).
 - Fastify API server
 - SQLite (`better-sqlite3`) storage
 - Upload endpoint for `.json`, `.json.gz`, and `.json.bz2`
-- Public and private Docker Compose profiles
+- Separate public and private Docker Compose configurations
 
 ## Quick Start (public mode)
 
@@ -24,8 +24,8 @@ cp .env.example .env
 #    openssl rand -hex 32
 #    then put it in the API_KEY line.
 
-# 3. Start the public profile (website + read API + upload API)
-docker compose --profile public up -d --build
+# 3. Start public mode (website + read API + upload API)
+docker compose up -d --build
 ```
 
 Now open:
@@ -51,7 +51,8 @@ Refresh the website — the run now appears in the list.
 
 - **Private / local viewer** — point it at a folder of result files and browse them, no
   API key or GitHub App needed. This is what `qlever-control`'s visualize command uses.
-  See [SETUP.md § Private hosting](./SETUP.md).
+  It runs from `docker-compose.private.yml`; see
+  [SETUP.md § Private hosting](./SETUP.md).
 - **Full production deploy** (subpath/subdomain, GitHub App PR comments & checks) —
   see [SETUP.md](./SETUP.md). The mount path is resolved at request time from the
   `X-Forwarded-Prefix` header, so moving the site to a subpath needs no rebuild.
@@ -90,19 +91,20 @@ Upload / delete endpoints:
 
 ## Docker Compose modes
 
-The application mode (`public`/`private`) and endpoint surface are fixed by the Docker
-Compose profile you start, not set via `.env`.
+Public mode uses the default `docker-compose.yml`. Private mode uses
+`docker-compose.private.yml`, keeping the deployments mutually exclusive; the mode is
+not selected through `.env`.
 
 | Mode      | Command                                                                              | Website                 |
 |-----------|--------------------------------------------------------------------------------------|-------------------------|
-| Public    | `docker compose --profile public up --build`                                         | `http://localhost:8080` |
-| Private   | `LOCAL_RESULTS_DIR=./public/results docker compose --profile private up --build`     | `http://localhost:8081` |
+| Public    | `docker compose up --build`                                                          | `http://localhost:8080` |
+| Private   | `LOCAL_RESULTS_DIR=./public/results docker compose -f docker-compose.private.yml up --build` | `http://localhost:8081` |
 
 Private mode auto-imports files from `LOCAL_RESULTS_DIR` on startup. Full details,
 ports, and verification steps are in [SETUP.md](./SETUP.md).
 
 ## Configuration
 
-Every environment variable is explained inline in [.env.example](./.env.example). For a
-summary of the important ones and full deployment / GitHub App setup, see
-[SETUP.md](./SETUP.md).
+Persistent configuration is explained inline in [.env.example](./.env.example). For
+private-mode launch inputs, a summary of the important settings, and full deployment /
+GitHub App setup, see [SETUP.md](./SETUP.md).
