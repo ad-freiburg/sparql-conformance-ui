@@ -1,0 +1,59 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "${PUBLIC_WEB_PORT:-8080}:80"
+    depends_on:
+      - api-public
+
+  api-public:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      APP_MODE: public
+      API_SURFACE: read
+      PORT: 3000
+      HOST: 0.0.0.0
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      DB_PATH: /data/conformance.db
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GITHUB_INSTALLATION_ID: ${GITHUB_INSTALLATION_ID:-}
+    volumes:
+      - db_data:/data
+    networks:
+      default:
+        aliases:
+          - api
+
+  uploader:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "${PUBLIC_UPLOAD_PORT:-3001}:3000"
+    environment:
+      APP_MODE: public
+      API_SURFACE: upload
+      PORT: 3000
+      HOST: 0.0.0.0
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      WEBSITE_URL: ${WEBSITE_URL:-}
+      DB_PATH: /data/conformance.db
+      API_KEY: ${API_KEY:-change-me}
+      DELETE_API_KEY: ${DELETE_API_KEY:-}
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GITHUB_INSTALLATION_ID: ${GITHUB_INSTALLATION_ID:-}
+      CHECK_NAME: "${CHECK_NAME:-}"
+      CHECK_TITLE: "${CHECK_TITLE:-}"
+      CHECK_RUNNING_TITLE: "${CHECK_RUNNING_TITLE:-}"
+      COMMENT_AUTHOR: "${COMMENT_AUTHOR:-}"
+    volumes:
+      - db_data:/data
+
+volumes:
+  db_data:

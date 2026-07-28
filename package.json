@@ -1,14 +1,44 @@
 {
-  "name": "qlever-conformance-website",
-  "version": "1.0.0",
-  "description": "website for the qlever conformance test results",
-  "main": "index.js",
+  "name": "conformance-website-react",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "server": "node server/index.js",
+    "server:dev": "NODE_ENV=development node --watch server/index.js",
+    "db:setup": "node db/setup.js",
+    "db:test": "node -e \"import('./db/connection.js').then(m => m.testConnection())\"",
+    "db:import": "node db/import.js"
   },
-  "author": "Rico Andris",
-  "license": "ISC",
   "dependencies": {
-    "express": "^4.21.0"
+    "@fastify/compress": "^8.3.0",
+    "@fastify/cors": "^11.1.0",
+    "@fastify/multipart": "^9.3.0",
+    "@octokit/auth-app": "^7.1.1",
+    "@octokit/rest": "^21.0.2",
+    "better-sqlite3": "^11.10.0",
+    "fastify": "^5.6.2",
+    "pino-pretty": "^13.1.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react-swc": "^4.0.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.33.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "vite": "^7.1.2"
   }
 }

@@ -1,5 +1,6 @@
 # Custom ignore result files
 public/results
+.idea
 
 # Logs
 logs

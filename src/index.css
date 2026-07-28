@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* optional: nice defaults */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  body { @apply bg-gray-50 text-gray-900; }
+}
+
+/* Styles for HTML-rendered test result content */
+@layer components {
+  /* Visually hidden - accessible but not visible */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    display: none; /* Simpler approach for our use case */
+  }
+
+  .html-content {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  
+  .html-content pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
+  .html-content .normalText {
+    display: block;
+  }
+  
+  .html-content .redText {
+    display: block;
+  }
+  
+  /* Yellow highlighting - for intended differences */
+  .html-content label.yellow,
+  .html-content .yellow-highlight {
+    color: #ea580c; /* orange-600 */
+    background-color: transparent;
+    padding: 0;
+  }
+  
+  /* Red highlighting - for actual errors/differences */
+  .html-content label.red {
+    color: #dc2626; /* red-600 */
+    background-color: transparent;
+    padding: 0;
+  }
+  
+  .html-content .red-highlight,
+  .html-content .error-highlight {
+    background-color: #fecaca; /* red-200 */
+    color: #991b1b; /* red-800 */
+    padding: 0;
+  }
+}

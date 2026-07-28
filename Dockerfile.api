@@ -1,0 +1,23 @@
+FROM node:22-bookworm-slim
+
+WORKDIR /app
+
+# better-sqlite3 and bz2 support
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ bzip2 \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY server ./server
+COPY db ./db
+COPY docker/api-entrypoint.sh ./docker/api-entrypoint.sh
+RUN chmod +x ./docker/api-entrypoint.sh
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+EXPOSE 3000
+
+CMD ["./docker/api-entrypoint.sh"]
