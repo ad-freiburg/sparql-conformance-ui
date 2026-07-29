@@ -39,7 +39,8 @@ docker compose up -d --build
 Open <http://localhost:8080>. The database starts empty; see
 [API and uploads](server/README.md) to add a result. Production deployment,
 reverse proxies, subpaths, and GitHub integration are covered in
-[Setup and hosting](SETUP.md).
+[Setup and hosting](SETUP.md). SQLite data is stored on the host in `./data`
+by default; set `DB_DATA_DIR` to a stable absolute path in production.
 
 ## Documentation
 

@@ -78,7 +78,48 @@ PUBLIC_UPLOAD_PORT=3001
 The database starts empty. To load data, upload a result file (see
 [GITHUB_WORKFLOW.md](./GITHUB_WORKFLOW.md) for CI and manual upload examples).
 
-### 2.4 Optional: subpath / subdomain deployment
+### 2.4 Database persistence
+
+The public SQLite database is bind-mounted from the host rather than stored in a
+Docker-managed volume. It defaults to `./data/conformance.db`, so container
+replacement, Compose project-name changes, and Docker volume pruning do not remove
+it. Both `api-public` and `uploader` mount the same directory.
+
+For production, set `DB_DATA_DIR` in `.env` to a stable absolute host path outside
+the Git checkout:
+
+```env
+DB_DATA_DIR=/srv/sparql-conformance-ui/data
+```
+
+Create the directory before the first start and ensure Docker can write to it. Keep
+it on a local filesystem: SQLite WAL mode depends on filesystem locking and is not
+safe on NFS or similar network filesystems.
+
+If upgrading an installation that already has data in the old `db_data` named
+volume, copy it before starting the new configuration. First capture the volume
+name while the old service still exists, then stop the services so SQLite has no
+open writers:
+
+```bash
+OLD_DB_VOLUME="$(
+  docker inspect --format \
+    '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Name}}{{end}}{{end}}' \
+    "$(docker compose ps -q api-public)"
+)"
+docker compose down
+mkdir -p ./data
+docker run --rm \
+  -v "${OLD_DB_VOLUME}:/from:ro" \
+  -v "$(pwd)/data:/to" \
+  alpine sh -c 'cp -a /from/. /to/'
+docker compose up -d --build
+```
+
+Verify the runs are present before removing the old Docker volume. Copy the whole
+directory—not only `conformance.db`—so any SQLite WAL sidecar files are included.
+
+### 2.5 Optional: subpath / subdomain deployment
 
 The site's mount point is resolved at **request time** from the `X-Forwarded-Prefix`
 header your reverse proxy sends — no rebuild needed to change it. The nginx container
@@ -132,6 +173,8 @@ LOCAL_RESULTS_DIR=/absolute/path/to/results \
 ```
 
 Provide `LOCAL_RESULTS_DIR` directly in the command rather than storing it in `.env`.
+Private mode rebuilds its container-local SQLite database from this directory on
+every start, so it does not require a persistent database directory.
 The private Compose file contains only `web-private` and `api-private`, so public services
 are never started by this command.
 
@@ -249,7 +292,8 @@ inline in [.env.example](.env.example); private-mode launch inputs are documente
 |--------------------------|---------|----------|---------|
 | `API_KEY`                | public  | yes      | Shared secret the uploader checks (`x-api-key`). Generate with `openssl rand -hex 32`. |
 | `DELETE_API_KEY`         | public  | no       | Separate key authorizing `DELETE /api/runs/:id`. Keep distinct from `API_KEY` so the CI-shared upload key cannot delete runs. Falls back to `API_KEY` if unset. |
-| `WEBSITE_URL`            | public  | no       | Full public URL, used only for GitHub PR-comment links. Does not affect how the site is served — see section 2.4. |
+| `WEBSITE_URL`            | public  | no       | Full public URL, used only for GitHub PR-comment links. Does not affect how the site is served — see section 2.5. |
+| `DB_DATA_DIR`            | public  | no       | Host directory for SQLite data (default `./data`). Use a stable absolute path in production. |
 | `LOCAL_RESULTS_DIR`      | private | yes      | Launch-time shell input for the absolute host path to the results folder to auto-import. |
 | `LOG_LEVEL`              | both    | no       | Log verbosity: `fatal`, `error`, `warn`, `info` (default), `debug`, `trace`. |
 | `PUBLIC_WEB_PORT` / `PUBLIC_UPLOAD_PORT` | public | no | Host ports (defaults `8080` / `3001`). |

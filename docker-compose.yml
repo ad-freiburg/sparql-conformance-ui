@@ -23,7 +23,9 @@ services:
       GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
       GITHUB_INSTALLATION_ID: ${GITHUB_INSTALLATION_ID:-}
     volumes:
-      - db_data:/data
+      - type: bind
+        source: ${DB_DATA_DIR:-./data}
+        target: /data
     networks:
       default:
         aliases:
@@ -53,7 +55,6 @@ services:
       CHECK_RUNNING_TITLE: "${CHECK_RUNNING_TITLE:-}"
       COMMENT_AUTHOR: "${COMMENT_AUTHOR:-}"
     volumes:
-      - db_data:/data
-
-volumes:
-  db_data:
+      - type: bind
+        source: ${DB_DATA_DIR:-./data}
+        target: /data

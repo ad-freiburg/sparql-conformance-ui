@@ -18,16 +18,12 @@ services:
       PORT: 3000
       HOST: 0.0.0.0
       LOG_LEVEL: "${LOG_LEVEL:-info}"
-      DB_PATH: /data/conformance.db
+      DB_PATH: /tmp/conformance.db
       LOCAL_RESULTS_DIR: /results
       PRIVATE_AUTO_IMPORT: "true"
     volumes:
-      - db_data_private:/data
       - ${LOCAL_RESULTS_DIR:-./public/results}:/results:ro
     networks:
       default:
         aliases:
           - api
-
-volumes:
-  db_data_private:
