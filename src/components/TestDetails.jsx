@@ -31,6 +31,9 @@ export default function TestDetails({ test, onClose }) {
   const entries = activeTab === 'overview' 
     ? getOverviewEntries(test) 
     : getAllEntries(test);
+  const visibleEntries = entries.filter(
+    ({ value }) => value || value === 0 || value === false
+  );
 
   return (
     <div ref={containerRef} className="bg-white rounded-xl shadow-lg border border-gray-200 mt-6">
@@ -66,13 +69,8 @@ export default function TestDetails({ test, onClose }) {
       {/* Content */}
       <div className="p-6 max-h-[80vh] overflow-y-auto">
         <div className="space-y-6">
-          {entries.map((entry, index) => {
-            // Skip if no value
-            if (!entry.value && entry.value !== 0 && entry.value !== false) {
-              return null;
-            }
-
-            return (
+          {visibleEntries.length > 0 ? (
+            visibleEntries.map((entry, index) => (
               <div key={`${entry.key}-${index}`} className="border-b pb-4 last:border-b-0">
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">{entry.label}</h3>
                 <FieldValueRenderer
@@ -82,8 +80,10 @@ export default function TestDetails({ test, onClose }) {
                   toggleIntended={toggleIntended}
                 />
               </div>
-            );
-          })}
+            ))
+          ) : (
+            <p className="text-sm text-gray-500">No details were recorded for this test.</p>
+          )}
         </div>
       </div>
     </div>
