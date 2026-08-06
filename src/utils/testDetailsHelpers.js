@@ -13,6 +13,15 @@ export const RESULT_FIELD_KEYS = new Set([
   'gotHtml'
 ]);
 
+const SYNTAX_TEST_TYPES = new Set([
+  'PositiveSyntaxTest',
+  'NegativeSyntaxTest',
+  'PositiveSyntaxTest11',
+  'NegativeSyntaxTest11',
+  'PositiveUpdateSyntaxTest11',
+  'NegativeUpdateSyntaxTest11'
+]);
+
 /**
  * Check if a field key represents a result field that should respond to toggles
  * @param {string} key - The field key
@@ -133,8 +142,7 @@ export function getOverviewEntries(test) {
       key: "queryResult",
       isHtml: resultsAreHtml
     });
-  } else if (typeName === "PositiveSyntaxTest11" || typeName === "NegativeSyntaxTest11" || 
-             typeName === "PositiveUpdateSyntaxTest11" || typeName === "NegativeUpdateSyntaxTest11") {
+  } else if (SYNTAX_TEST_TYPES.has(typeName)) {
     entries.push({
       label: "Query File",
       value: test.queryFile,
