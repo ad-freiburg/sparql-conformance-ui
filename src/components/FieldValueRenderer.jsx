@@ -1,4 +1,5 @@
 import { isResultField, getRedHtmlContent } from '../utils/testDetailsHelpers';
+import ServiceDataRenderer from './ServiceDataRenderer';
 
 /**
  * Renders a field value with HTML handling and toggle support
@@ -10,6 +11,10 @@ export default function FieldValueRenderer({
   toggleMatching = false, 
   toggleIntended = false 
 }) {
+  if (entry?.valueType === 'serviceData') {
+    return <ServiceDataRenderer fixtures={entry.value} />;
+  }
+
   if (!entry?.value) {
     return <span className="text-gray-400">N/A</span>;
   }

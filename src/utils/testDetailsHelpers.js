@@ -23,6 +23,49 @@ export function isResultField(key) {
 }
 
 /**
+ * Validate stored SERVICE fixtures without assuming every run uses the latest
+ * result schema.
+ * @param {*} value - Stored serviceData value
+ * @returns {Array<{endpoint: string, fileName?: string, content: string}>}
+ */
+export function normalizeServiceData(value) {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((fixture) => {
+    if (!fixture || typeof fixture !== 'object' || Array.isArray(fixture)) {
+      return [];
+    }
+    if (typeof fixture.endpoint !== 'string' || !fixture.endpoint.trim()) {
+      return [];
+    }
+    if (typeof fixture.content !== 'string') {
+      return [];
+    }
+
+    const normalized = {
+      endpoint: fixture.endpoint.trim(),
+      content: fixture.content
+    };
+    if (typeof fixture.fileName === 'string' && fixture.fileName.trim()) {
+      normalized.fileName = fixture.fileName.trim();
+    }
+    return [normalized];
+  });
+}
+
+function serviceDataEntry(test) {
+  const fixtures = normalizeServiceData(test?.serviceData);
+  if (fixtures.length === 0) return null;
+  return {
+    label: "SERVICE Endpoint Data",
+    value: fixtures,
+    key: "serviceData",
+    valueType: "serviceData",
+    isHtml: false
+  };
+}
+
+/**
  * Get overview entries based on test type and error type
  * @param {Object} test - The test object
  * @returns {Array} Array of entry objects with label, value, key, and isHtml properties
@@ -74,6 +117,10 @@ export function getOverviewEntries(test) {
       key: "queryFile",
       isHtml: false
     });
+    if (typeName === "QueryEvaluationTest") {
+      const serviceEntry = serviceDataEntry(test);
+      if (serviceEntry) entries.push(serviceEntry);
+    }
     entries.push({
       label: "Expected Result",
       value: expectedResult,
@@ -169,6 +216,8 @@ export function getOverviewEntries(test) {
 export function getAllEntries(test) {
   if (!test) return [];
 
+  const serviceEntry = serviceDataEntry(test);
+
   return [
     {
       label: "Index File",
@@ -188,6 +237,13 @@ export function getAllEntries(test) {
       key: "queryFile",
       isHtml: false
     },
+    {
+      label: "Execution Query",
+      value: test.executionQuery,
+      key: "executionQuery",
+      isHtml: false
+    },
+    ...(serviceEntry ? [serviceEntry] : []),
     {
       label: "Query Sent",
       value: test.querySent,
