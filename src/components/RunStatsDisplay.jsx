@@ -82,8 +82,8 @@ export default function RunStatsDisplay({ stats, suiteStats = [], variant = 'inl
     return (
       <div className="flex items-center gap-4 text-sm flex-wrap">
         <span className="text-gray-600"><span className="font-semibold text-green-600">{stats.passed}</span> passed</span>
-        <span className="text-gray-600"><span className="font-semibold text-red-600">{stats.failed}</span> failed</span>
         <span className="text-gray-600"><span className="font-semibold text-yellow-600">{stats.intended}</span> intended</span>
+        <span className="text-gray-600"><span className="font-semibold text-red-600">{stats.failed}</span> failed</span>
         <span className="text-gray-600"><span className="font-semibold">{stats.total}</span> total</span>
         <span className={`font-semibold ${passRateColor}`}>{passRate}% pass rate</span>
       </div>
@@ -96,8 +96,8 @@ export default function RunStatsDisplay({ stats, suiteStats = [], variant = 'inl
         <tr className="text-sm">
           <td className="font-medium text-gray-500 pr-1">All</td>
           <td className="text-gray-600"><span className="font-semibold text-green-600">{stats.passed}</span> passed</td>
-          <td className="text-gray-600"><span className="font-semibold text-red-600">{stats.failed}</span> failed</td>
           <td className="text-gray-600"><span className="font-semibold text-yellow-600">{stats.intended}</span> intended</td>
+          <td className="text-gray-600"><span className="font-semibold text-red-600">{stats.failed}</span> failed</td>
           <td className="text-gray-600"><span className="font-semibold">{stats.total}</span> total</td>
           <td className={`font-semibold ${passRateColor}`}>{passRate}% pass rate</td>
         </tr>
@@ -105,8 +105,8 @@ export default function RunStatsDisplay({ stats, suiteStats = [], variant = 'inl
           <tr key={s.suite} className="text-xs text-gray-500">
             <td className="font-medium text-gray-600">{normalizeDisplayValue('suite', s.suite)}</td>
             <td><span className="font-semibold text-green-600">{s.passed}</span> passed</td>
-            <td><span className="font-semibold text-red-600">{s.failed}</span> failed</td>
             <td><span className="font-semibold text-yellow-600">{s.intended}</span> intended</td>
+            <td><span className="font-semibold text-red-600">{s.failed}</span> failed</td>
             <td><span className="font-semibold text-gray-700">{s.total}</span> total</td>
             <td />
           </tr>

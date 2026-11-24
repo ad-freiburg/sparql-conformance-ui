@@ -1,5 +1,6 @@
 services:
   web:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile.web
@@ -9,6 +10,7 @@ services:
       - api-public
 
   api-public:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile.api
@@ -32,6 +34,7 @@ services:
           - api
 
   uploader:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile.api
