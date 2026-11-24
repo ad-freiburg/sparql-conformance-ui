@@ -56,13 +56,31 @@ async function getOctokit() {
 
   const { Octokit } = await import('@octokit/rest');
   const { createAppAuth } = await import('@octokit/auth-app');
+  const { retry } = await import('@octokit/plugin-retry');
+  const { throttling } = await import('@octokit/plugin-throttling');
 
-  octokitInstance = new Octokit({
+  // Retry transient server errors and rate-limited requests, so that a single
+  // failed request does not silently drop a check run or PR comment.
+  const retryRateLimited = (retryAfter, options, octokit, retryCount) => {
+    octokit.log.warn(`Rate limit hit for ${options.method} ${options.url}`);
+    if (retryCount < 2) {
+      octokit.log.info(`Retrying after ${retryAfter} seconds`);
+      return true;
+    }
+    return false;
+  };
+
+  const ThrottledOctokit = Octokit.plugin(retry, throttling);
+  octokitInstance = new ThrottledOctokit({
     authStrategy: createAppAuth,
     auth: {
       appId: config.githubAppId,
       privateKey: config.githubPrivateKey,
       installationId: config.githubInstallationId,
+    },
+    throttle: {
+      onRateLimit: retryRateLimited,
+      onSecondaryRateLimit: retryRateLimited,
     },
   });
 
@@ -124,8 +142,13 @@ export async function verifyAuthentication() {
 }
 
 /**
- * Create or update a Check Run on a commit
- * 
+ * Create a completed Check Run on a commit
+ *
+ * The tests have already finished when this is called, so the check run is
+ * created in its final state with a single request. Creating it as
+ * `in_progress` and completing it with a second request would leave it stuck
+ * `in_progress` forever whenever that second request fails.
+ *
  * @param {Object} options
  * @param {string} options.owner - Repository owner
  * @param {string} options.repo - Repository name
@@ -155,18 +178,6 @@ export async function createCheckRun({
       repo,
       name,
       head_sha: commitSha,
-      status: 'in_progress',
-      started_at: new Date().toISOString(),
-      output: {
-        title: config.checkRunningTitle,
-        summary: 'The test suite is in progress...',
-      },
-    });
-
-    const updated = await octokit.rest.checks.update({
-      owner,
-      repo,
-      check_run_id: checkRun.data.id,
       status: 'completed',
       conclusion,
       completed_at: new Date().toISOString(),
@@ -177,7 +188,7 @@ export async function createCheckRun({
       }
     });
 
-    return updated.data;
+    return checkRun.data;
   } catch (error) {
     console.error(`Error creating check run for ${owner}/${repo}@${commitSha}:`, error.message);
     throw error;

@@ -258,7 +258,6 @@ Optionally customize the check/comment display names (defaults shown):
 ```env
 CHECK_NAME=SPARQL 1.1 Conformance Check
 CHECK_TITLE=SPARQL Test Suite
-CHECK_RUNNING_TITLE=Running SPARQL Test Suite
 COMMENT_AUTHOR=conformance-test[bot]
 ```
 
