@@ -109,10 +109,6 @@ const config = {
     return process.env.CHECK_TITLE || 'SPARQL Test Suite';
   },
   
-  get checkRunningTitle() {
-    return process.env.CHECK_RUNNING_TITLE || 'Running SPARQL Test Suite';
-  },
-  
   get commentAuthor() {
     return process.env.COMMENT_AUTHOR || 'conformance-test[bot]';
   },
